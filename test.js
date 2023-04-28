@@ -1,14 +1,22 @@
 import { suite, run } from 'flitch';
 import { strict as assert } from 'node:assert';
-import { Model, string, number, boolean, object, array } from './index.js'
+import { Model, string, number, boolean, object, array, field, setMode } from './index.js'
 
 const test = suite('modus tests');
+
+const consoleWarn = console.warn;
 
 const shouldThrow = fn => {
   let thrown = false;
   try { fn() }
   catch { thrown = true; }
   assert.ok(thrown);
+};
+
+test.after.each = () => {
+  // clean up
+  setMode('throw');
+  console.warn = consoleWarn;
 };
 
 test('test basic usage', () => {
@@ -100,49 +108,218 @@ test('nested models', () => {
   });
 
   // should still typecheck optional fields
-  tmp.name = 10;
-  console.log(tmp);
+  shouldThrow(() => tmp.name = 10);
+  tmp.name = 'bro'; // should not throw
+  assert.deepEqual(tmp, {
+    name: 'bro',
+    profile: {
+      password: 'passwd'
+    }
+  });
+});
+
+test('validation', () => {
+  const User = Model({
+    name: string({ validate: x => x.length > 4 })
+  });
+
+  const kevin = User({
+    name: 'kevin'
+  });
+
+  shouldThrow(() => kevin.name = 'kevi');
+});
+
+test('warn mode', () => {
+  setMode('warn');
+
+  let warns = [];
+  console.warn = str => {
+    warns.push(str);
+  };
+
+  const User = Model({
+    age: number({ validate: x => x > 10 }),
+    profile: Model({
+      nested: Model({
+        greatly: Model({
+          foo: array({ validate: x => x.length > 5 })
+        })
+      })
+    })
+  });
+
+  // this should not throw; should warn
+  User({
+    age: 9,
+    profile: {
+      nested: {
+        greatly: {
+          foo: [1, 2, 3, 4, 5]
+        }
+      }
+    }
+  });
+
+  assert.equal(warns.length, 2);
+  assert.equal(warns[0], '.age failed validation');
+  assert.equal(warns[1], '.profile.nested.greatly.foo failed validation');
+});
+
+test('off mode', () => {
+  setMode('off');
+
+  let warns = [];
+  console.warn = str => warns.push(str);
+
+  // should not warn or throw
+  const User = Model({
+    age: number({ validate: x => x > 10 })
+  });
+
+  User({ age: 9 });
+  assert.equal(warns.length, 0);
+});
+
+test('deeply nested models', () => {
+  setMode('warn');
+  let warns = [];
+  console.warn = str => warns.push(str);
+
+  const User = Model({
+    foo: number(),
+    bar: Model({
+      baz: Model({
+        buz: Model({
+          name: string()
+        })
+      })
+    })
+  });
+
+  User({
+    foo: 10,
+    bar: {}
+  });
+
+  User({
+    foo: 10,
+    bar: {
+      baz: {}
+    }
+  });
+
+  User({
+    foo: 10,
+    bar: {
+      baz: {
+        buz: {
+          name: []
+        }
+      }
+    }
+  });
+
+  assert.equal(warns.length, 3);
+  assert.equal(warns[0], '.bar.baz is a required property');
+  assert.equal(warns[1], '.bar.baz.buz is a required property');
+  assert.equal(warns[2], '.bar.baz.buz.name must be of type: string');
+});
+
+test('default values', () => {
+  const User = Model({
+    name: string(),
+    age: number({ default: 10 })
+  });
+
+  // should not throw because propers with defaults are not required
+  const user = User({
+    name: 'kevin'
+  });
+
+  assert.deepEqual(user, {
+    name: 'kevin',
+    age: 10
+  });
+});
+
+test('validation shortcut', () => {
+  const User = Model({
+    name: string(x => x.length > 5)
+  });
+
+  shouldThrow(() => {
+    User({
+      name: '12345'
+    });
+  });
+});
+
+test('using field properties for optional nested models', () => {
+  const Profile = Model({
+    age: number({ required: false })
+  });
+
+  const User = Model({
+    name: string(),
+    profile: field({ default: {}, schema: Profile.schema })
+  });
+
+  let user = User({
+    name: 'kevin'
+  });
+
+  assert.deepEqual(user, {
+    name: 'kevin',
+    profile: {}
+  });
+
+  user.profile.age = 10;
+
+  assert.deepEqual(user, {
+    name: 'kevin',
+    profile: { age: 10 }
+  });
+
+  shouldThrow(() => {
+    user.profile.age = 'not a number';
+  });
+});
+
+test.only('readme sample', () => {
+  // define your models
+  const Profile = Model({
+    password: string(str => str.length > 5),
+    pets: array((pets, is) => pets.every(is.string))
+  });
+
+  // models can be nested
+  const User = Model({
+    name: string(),
+    age: number(),
+    profile: Profile
+  });
+
+  // create an object; will throw if invalid
+  const user = User({
+    name: 'kevin',
+    age: 20,
+    profile: {
+      password: 'hunter2',
+      pets: ['maggie', 'trixie', 'flitch', 'haku']
+    }
+  });
+
+  // modify your object as you normally would
+  user.name = 'rafael';
+
+  // will throw on invalid assignments
+  shouldThrow(() => user.profile.password = '1234');
+
+  // should make this throw
+  user.profile.pets.push(10);
+
+  console.log(user);
 });
 
 run();
-
-// const Profile = Model({
-//   password: string({
-//     required: true,
-//     validate: x => x.length > 5
-//   }),
-//   posts: number({ default: 234 })
-// });
-
-// const User = Model({
-//   name: string({ required: true }),
-//   age: number(x => x > 3),
-//   profile: Profile
-//   // profile: object({ default: {}, schema: Profile.schema })
-// });
-
-// const user = User({
-//   name: 'kevin',
-//   age: 18,
-//   profile: { password: 'fassdff', posts: 10 }
-// });
-
-// user.profile.password = 'asdfaf';
-// user.profile.posts = 3435
-// user.profile = 10;
-
-// const profile = Profile({
-//   password: 'niceaa'
-// });
-
-// console.log(profile);
-
-
-
-// const user = User({
-//   name: 'kevin',
-//   age: 15,
-//   profile: {
-//     password: 'wahooo'
-//   }
-// });
