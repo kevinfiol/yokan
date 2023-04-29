@@ -44,4 +44,4 @@ npm install yokan
 
 ## Credits
 
-yokan is a minimalist clone of [use-models-for-data](https://github.com/Pomax/use-models-for-data) by [Pomax](https://github.com/Pomax/). If you're looking for something more full-featured, check it out!
+yokan is a minimalist clone of [use-models-for-data](https://github.com/Pomax/use-models-for-data) by [Pomax](https://github.com/Pomax/).
