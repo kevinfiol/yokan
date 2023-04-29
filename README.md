@@ -1,4 +1,4 @@
-# yokan
+# yokan (WIP)
 
 Self-validating mutable objects.
 
