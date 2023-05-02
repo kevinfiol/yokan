@@ -10,6 +10,7 @@
   "module": "dist/yokan.js",
   "unpkg": "dist/yokan.min.js",
   "umd:name": "yokan",
+  "types": "index.d.ts",
   "scripts": {
     "test": "node test.js",
     "build": "bundt index.js && node test.js",
