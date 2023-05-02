@@ -2,7 +2,7 @@ import { suite, run } from 'flitch';
 import { strict as assert } from 'node:assert';
 import { Model, string, number, boolean, object, array, field, setMode } from './index.js'
 
-const test = suite('modus tests');
+const test = suite('yokan tests');
 
 const consoleWarn = console.warn;
 
@@ -287,38 +287,59 @@ test('using field properties for optional nested models', () => {
 });
 
 test.only('readme sample', () => {
-  // define your models
-  const Profile = Model({
-    password: string(str => str.length > 5),
-    pets: array((pets, is) => pets.every(is.string))
-  });
+  // // define your models
+  // const Profile = Model({
+  //   password: string(str => str.length > 5),
+  //   pets: array((pets, is) => pets.every(is.string))
+  // });
 
-  // models can be nested
+  // // models can be nested
+  // const User = Model({
+  //   name: string(),
+  //   age: number(),
+  //   profile: Profile
+  // });
+
+  // // create an object; will throw if invalid
+  // const user = User({
+  //   name: 'kevin',
+  //   age: 20,
+  //   profile: {
+  //     password: 'hunter2',
+  //     pets: ['maggie', 'trixie', 'flitch', 'haku']
+  //   }
+  // });
+
+  // // // modify your object as you normally would
+  // // user.name = 'rafael';
+
+  // // // will throw on invalid assignments
+  // // shouldThrow(() => user.profile.password = '1234');
+
+  // // should make this throw
+  // user.profile.pets.push(10);
+
+  // console.log(user);
+
   const User = Model({
     name: string(),
     age: number(),
-    profile: Profile
+    profile: {
+      address: string()
+    },
+    pets: array((pets, is) => pets.every(is.string))
   });
 
-  // create an object; will throw if invalid
   const user = User({
     name: 'kevin',
-    age: 20,
+    age: 10,
+    pets: ['one', 'two', 'three'],
     profile: {
-      password: 'hunter2',
-      pets: ['maggie', 'trixie', 'flitch', 'haku']
+      address: '1010'
     }
   });
 
-  // modify your object as you normally would
-  user.name = 'rafael';
-
-  // will throw on invalid assignments
-  shouldThrow(() => user.profile.password = '1234');
-
-  // should make this throw
-  user.profile.pets.push(10);
-
+  user.pets.push(10);
   console.log(user);
 });
 

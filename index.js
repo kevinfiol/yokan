@@ -25,7 +25,7 @@ export const object = obj => field(obj, 'object');
 export const string = obj => field(obj, 'string');
 
 export function Model(schema) {
-  let model = obj => MODE !== 1 ? parse(schema, obj, true) : obj;
+  let model = obj => MODE !== 1 ? parse(schema, obj, true, '') : obj;
   model.schema = schema;
   model.type = 'object';
   return model;
@@ -38,7 +38,7 @@ function validateProp({ required = true, validate, type }, chain, val) {
     err = required && !CHECK.defined(val)
       ? chain + ' is a required property'
       : typecheck && !(typecheck(val) || (!required && !CHECK.defined(val)))
-      ? chain + ' must be of type: ' + type
+      ? chain + ' must be of type: ' + type + ', received: ' + typeof val
       : validate && !validate(val, CHECK)
       ? chain + ' failed validation'
       : NIL;
@@ -49,11 +49,12 @@ function validateProp({ required = true, validate, type }, chain, val) {
   }
 }
 
-function parse(schema, obj, proxy, chain = '') {
+function parse(schema, obj, proxy, chain) {
   if (!obj) return;
 
   for (let k in schema) {
-    let newChain = chain + '.' + k,
+    let tmp,
+      newChain = chain + '.' + k,
       checks = schema[k],
       val = obj[k];
 
@@ -62,12 +63,21 @@ function parse(schema, obj, proxy, chain = '') {
 
     validateProp(checks, newChain, val);
 
-    if (checks.schema)
-      obj[k] = parse(checks.schema, val, proxy, newChain);
+    if (tmp = checks.schema || CHECK.object(val) && checks) {
+      obj[k] = parse(tmp, val, proxy, newChain);
+    } else if (CHECK.array(val)) {
+      obj[k] = new Proxy(val, {
+        set(_, k, v) {
+          console.log({k, v});
+          return Reflect.set(...arguments);
+        }
+      })
+    }
   }
 
   if (proxy) return new Proxy(obj, {
     set(_, k, val) {
+      console.log({k, val})
       let newChain = chain + '.' + k,
         checks = schema[k];
       validateProp(checks, newChain, val)
