@@ -7,15 +7,14 @@ let NIL = void 0,
     boolean: x => typeof x === 'boolean',
     object: x => x && Object.getPrototypeOf(x) === Object.prototype,
     string: x => typeof x === 'string',
-    function: x => typeof x === 'function',
     defined: x => x !== NIL
   };
 
 export const setMode = mode => MODE = MODES[mode] || 2;
 
-export const field = (obj, _type) => {
-  if (CHECK.function(obj)) return { validate: obj, _type };
-  return { ...obj, _type };
+export const field = (obj, _t) => {
+  if (typeof obj === 'function') return { validate: obj, _t };
+  return { ...obj, _t };
 };
 
 export const number = obj => field(obj, 'number');
@@ -25,20 +24,20 @@ export const object = obj => field(obj, 'object');
 export const string = obj => field(obj, 'string');
 
 export function Model(schema) {
-  let model = obj => MODE !== 1 ? parse(schema, obj, true, '') : obj;
+  let model = obj => MODE !== 1 ? parse(schema, obj, '') : obj;
   model.schema = schema;
-  model._type = 'object';
+  model._t = 'object';
   return model;
 }
 
-function validateProp({ required = true, type, validate, _type }, chain, val) {
+function validateProp({ required = true, type, validate, _t }, chain, val) {
   if (MODE === 1) return;
 
-  let typecheck = _type ? CHECK[_type] : NIL,
+  let typecheck = _t ? CHECK[_t] : NIL,
     err = required && !CHECK.defined(val)
       ? chain + ' is a required property'
       : typecheck && !(typecheck(val) || (!required && !CHECK.defined(val)))
-      ? chain + ' must be of type: ' + _type + ', received: ' + typeof val
+      ? chain + ' must be of type: ' + _t + ', received: ' + typeof val
       : validate && !validate(val, CHECK)
       ? chain + ' failed validation'
       : NIL;
@@ -48,15 +47,17 @@ function validateProp({ required = true, type, validate, _type }, chain, val) {
     if (MODE === 3) console.warn(err);
   }
 
-  if (_type === 'array' && type)
+  if (_t === 'array' && type)
     for (let i = 0, len = val.length; i < len; i++)
-      validateProp({ _type: type }, chain + '[' + i + ']', val[i]);
+      validateProp({ _t: type }, chain + '[' + i + ']', val[i]);
 }
 
-function parse(schema, obj, proxy, chain, isArr) {
-  if (!isArr && obj)
+function parse(schema, obj, chain, isArr) {
+  if (!obj) return;
+
+  if (!isArr)
     for (let k in schema) {
-      if (k === '_type') continue;
+      if (k === '_t') continue;
 
       let subSchema,
         newChain = chain + '.' + k,
@@ -69,23 +70,24 @@ function parse(schema, obj, proxy, chain, isArr) {
       validateProp(checks, newChain, val);
 
       if (subSchema = checks.schema || typeof val === 'object' && checks)
-        obj[k] = parse(subSchema, val, proxy, newChain, checks._type === 'array');
+        obj[k] = parse(subSchema, val, newChain, checks._t === 'array');
     }
 
-  if (proxy && obj) return new Proxy(obj, {
+  return new Proxy(obj, {
     set(o, k, val) {
       let newChain = chain + (isArr
         ? '[' + k + ']'
         : '.' + k),
       checks = isArr
-        ? { _type: schema.type }
+        ? { _t: schema.type }
         : schema[k];
 
       if (!isArr || (isArr && !Object.hasOwn(o, k) && schema.type))
         validateProp(checks, newChain, val);
 
       if (!isArr && checks.schema)
-        parse(checks.schema, val, false, newChain);
+        // proxy the new object
+        arguments[2] = parse(checks.schema, val, newChain);
 
       return Reflect.set(...arguments);
     }

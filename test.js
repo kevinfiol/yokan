@@ -321,4 +321,95 @@ test('readme sample', () => {
   shouldThrow(() => user.profile.pets.push(100));
 });
 
+test('plain objects default to schemas', () => {
+  const User = Model({
+    one: string(),
+    nested: {
+      name: string(),
+      subnested: {
+        age: number()
+      }
+    }
+  });
+
+  shouldThrow(() => {
+    User({
+      one: 'num',
+      nested: {
+        name: 'thing',
+        subnested: {
+          age: 'notanum'
+        }
+      }
+    })
+  });
+
+  // missing properties
+  shouldThrow(() => {
+    User({
+      one: 'one',
+      nested: {}
+    });
+  });
+
+  const user = User({
+    one: 'one',
+    nested: { name: 'kevin', subnested: { age: 10 } }
+  });
+
+  shouldThrow(() => {
+    user.nested.subnested.age = 'notanum';
+  });
+});
+
+test('arrays', () => {
+  const User = Model({
+    nested: {
+      pets: array({ type: 'number' })
+    }
+  });
+
+  shouldThrow(() => {
+    User({
+      nested: {
+        pets: [1, 2, 3, 'not a number']
+      }
+    });
+  });
+
+  const user = User({
+    nested: {
+      pets: [1, 2, 3]
+    }
+  });
+
+  shouldThrow(() => user.nested.pets.push('also not a number'));
+});
+
+test('optional schemas', () => {
+  const Profile = Model({
+    age: number()
+  });
+
+  const User = Model({
+    name: string(),
+    profile: object({ required: false, schema: Profile.schema })
+  });
+
+  const user = User({
+    name: 'kevin'
+  });
+
+  assert.deepEqual(user, {
+    name: 'kevin',
+    profile: undefined
+  });
+
+  user.profile = {
+    age: 10
+  };
+
+  shouldThrow(() => user.profile.age = 'not a num');
+});
+
 run();
