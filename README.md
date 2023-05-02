@@ -8,7 +8,7 @@ import { Model, string, number } from 'yokan';
 // define your models
 const Profile = Model({
   password: string(str => str.length > 5),
-  pets: array((pets, is) => pets.every(is.string))
+  pets: array({ type: 'string' })
 });
 
 // models can be nested
@@ -18,7 +18,8 @@ const User = Model({
   profile: Profile
 });
 
-// create an object; will throw if invalid
+// create an object
+// this will throw if the initial object is invalid
 const user = User({
   name: 'kevin',
   age: 20,
@@ -31,7 +32,7 @@ const user = User({
 // modify your object as you normally would
 user.name = 'rafael';
 
-// will throw on invalid assignments
+// the object will throw on invalid assignments
 // throws "Error: .profile.password failed validation"
 user.profile.password = '1234';
 ```

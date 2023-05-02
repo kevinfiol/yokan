@@ -223,7 +223,7 @@ test('deeply nested models', () => {
   assert.equal(warns.length, 3);
   assert.equal(warns[0], '.bar.baz is a required property');
   assert.equal(warns[1], '.bar.baz.buz is a required property');
-  assert.equal(warns[2], '.bar.baz.buz.name must be of type: string');
+  assert.equal(warns[2], '.bar.baz.buz.name must be of type: string, received: object');
 });
 
 test('default values', () => {
@@ -286,61 +286,39 @@ test('using field properties for optional nested models', () => {
   });
 });
 
-test.only('readme sample', () => {
-  // // define your models
-  // const Profile = Model({
-  //   password: string(str => str.length > 5),
-  //   pets: array((pets, is) => pets.every(is.string))
-  // });
+test('readme sample', () => {
+  // define your models
+  const Profile = Model({
+    password: string(str => str.length > 5),
+    pets: array({ type: 'string' })
+  });
 
-  // // models can be nested
-  // const User = Model({
-  //   name: string(),
-  //   age: number(),
-  //   profile: Profile
-  // });
-
-  // // create an object; will throw if invalid
-  // const user = User({
-  //   name: 'kevin',
-  //   age: 20,
-  //   profile: {
-  //     password: 'hunter2',
-  //     pets: ['maggie', 'trixie', 'flitch', 'haku']
-  //   }
-  // });
-
-  // // // modify your object as you normally would
-  // // user.name = 'rafael';
-
-  // // // will throw on invalid assignments
-  // // shouldThrow(() => user.profile.password = '1234');
-
-  // // should make this throw
-  // user.profile.pets.push(10);
-
-  // console.log(user);
-
+  // models can be nested
   const User = Model({
     name: string(),
     age: number(),
-    profile: {
-      address: string()
-    },
-    pets: array((pets, is) => pets.every(is.string))
+    profile: Profile
   });
 
+  // create an object; will throw if invalid
   const user = User({
     name: 'kevin',
-    age: 10,
-    pets: ['one', 'two', 'three'],
+    age: 20,
     profile: {
-      address: '1010'
+      password: 'hunter2',
+      pets: ['maggie', 'trixie', 'flitch', 'haku']
     }
   });
 
-  user.pets.push(10);
-  console.log(user);
+  // modify your object as you normally would
+  user.name = 'rafael';
+
+  // will throw on invalid assignments
+  // throws "Error: .profile.password failed validation"
+  shouldThrow(() => user.profile.password = '1234');
+
+  // array type should also be enforced
+  shouldThrow(() => user.profile.pets.push(100));
 });
 
 run();
