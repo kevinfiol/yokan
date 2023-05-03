@@ -12,10 +12,10 @@ let NIL = void 0,
 
 export const setMode = mode => MODE = MODES[mode] || 2;
 
-export const field = (obj, type) => {
-  if (typeof obj === 'function') return { validate: obj, _t: type };
-  return { ...obj, _t: type };
-};
+export const field = (obj, type) =>
+  typeof obj === 'function'
+    ? { validate: obj, _t: type }
+    : { ...obj, _t: type };
 
 export const number = obj => field(obj, 'number');
 export const array = obj => field(obj, 'array');
