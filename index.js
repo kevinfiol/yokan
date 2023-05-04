@@ -10,12 +10,10 @@ let NIL = void 0,
     defined: x => x !== NIL
   };
 
-export const setMode = mode => MODE = MODES[mode] || 2;
-
-export const field = (obj, type) =>
+export const field = (validate, _t) =>
   typeof obj === 'function'
-    ? { validate: obj, _t: type }
-    : { ...obj, _t: type };
+    ? { validate, _t }
+    : { ...validate, _t };
 
 export const number = obj => field(obj, 'number');
 export const array = obj => field(obj, 'array');
@@ -29,6 +27,8 @@ export function Model(schema) {
   model._t = 'object';
   return model;
 }
+
+Model.setMode = mode => MODE = MODES[mode] || 2;
 
 function validateProp({ required = true, type, validate, _t }, chain, val) {
   if (MODE === 1) return;
