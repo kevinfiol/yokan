@@ -11,7 +11,7 @@ let NIL = void 0,
   };
 
 export const field = (validate, _t) =>
-  typeof obj === 'function'
+  typeof validate === 'function'
     ? { validate, _t }
     : { ...validate, _t };
 

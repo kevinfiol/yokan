@@ -1,6 +1,6 @@
 import { suite, run } from 'flitch';
 import { strict as assert } from 'node:assert';
-import { Model, string, number, boolean, object, array, field, setMode } from './index.js'
+import { Model, string, number, boolean, object, array, field } from './index.js'
 
 const test = suite('yokan tests');
 
@@ -15,7 +15,7 @@ const shouldThrow = fn => {
 
 test.after.each = () => {
   // clean up
-  setMode('throw');
+  Model.setMode('throw');
   console.warn = consoleWarn;
 };
 
@@ -131,7 +131,7 @@ test('validation', () => {
 });
 
 test('warn mode', () => {
-  setMode('warn');
+  Model.setMode('warn');
 
   let warns = [];
   console.warn = str => {
@@ -167,7 +167,7 @@ test('warn mode', () => {
 });
 
 test('off mode', () => {
-  setMode('off');
+  Model.setMode('off');
 
   let warns = [];
   console.warn = str => warns.push(str);
@@ -182,7 +182,7 @@ test('off mode', () => {
 });
 
 test('deeply nested models', () => {
-  setMode('warn');
+  Model.setMode('warn');
   let warns = [];
   console.warn = str => warns.push(str);
 
