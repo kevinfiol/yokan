@@ -22,9 +22,14 @@ export const object = obj => field(obj, 'object');
 export const string = obj => field(obj, 'string');
 
 export function Model(schema) {
-  let model = obj => MODE !== 1 ? parse(schema, obj, '') : obj;
-  model.schema = schema;
-  model._t = 'object';
+  let enabled = MODE !== 1,
+    model = obj => enabled ? parse(schema, obj, '') : obj;
+
+  if (enabled) {
+    model.schema = schema;
+    model._t = 'object';
+  }
+
   return model;
 }
 
