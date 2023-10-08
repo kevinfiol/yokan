@@ -3,7 +3,7 @@
 Self-validating mutable objects.
 
 ```js
-import { Model, string, number } from 'yokan';
+import { Model, string, array, number } from 'yokan';
 
 // define your models
 const Profile = Model({
