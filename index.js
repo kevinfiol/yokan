@@ -21,7 +21,7 @@ export const boolean = obj => field(obj, 'boolean');
 export const object = obj => field(obj, 'object');
 export const string = obj => field(obj, 'string');
 
-export function Model(schema) {
+export const Model = (schema) => {
   let enabled = MODE !== 1,
     model = obj => enabled ? parse(schema, obj, '') : obj;
 
@@ -31,7 +31,7 @@ export function Model(schema) {
   }
 
   return model;
-}
+};
 
 Model.setMode = mode => MODE = MODES[mode] || 2;
 
